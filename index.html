@@ -129,8 +129,8 @@
           <option>Набор массы</option>
         </select>
 
-        <label for="ingredients">Ингредиенты (через запятую)</label>
-        <textarea id="ingredients" placeholder="например: куриная грудка, брокколи, киноа"></textarea>
+        <label for="ingredients">Ингредиенты (через запятую, можно с граммами)</label>
+        <textarea id="ingredients" placeholder="например: куриная грудка:150, брокколи:100, киноа:80"></textarea>
 
         <button id="generateBtn" type="button">Сгенерировать идею рецепта</button>
 
@@ -161,24 +161,107 @@
   <script>
     const recipeResult = document.getElementById("recipeResult");
     const caloriesResult = document.getElementById("caloriesResult");
+    const proteinInput = document.getElementById("protein");
+    const fatInput = document.getElementById("fat");
+    const carbsInput = document.getElementById("carbs");
+
+    // Пищевая ценность на 100 г: ккал, белки, жиры, углеводы.
+    const productsDb = {
+      "куриная грудка": { kcal: 165, protein: 31, fat: 3.6, carbs: 0 },
+      "индейка": { kcal: 135, protein: 29, fat: 1.5, carbs: 0 },
+      "лосось": { kcal: 208, protein: 20, fat: 13, carbs: 0 },
+      "тунец": { kcal: 130, protein: 29, fat: 1, carbs: 0 },
+      "яйцо": { kcal: 157, protein: 13, fat: 11, carbs: 0.7 },
+      "творог 5%": { kcal: 121, protein: 17, fat: 5, carbs: 1.8 },
+      "греческий йогурт": { kcal: 73, protein: 9, fat: 2, carbs: 4 },
+      "овсянка": { kcal: 352, protein: 12.3, fat: 6.1, carbs: 61.8 },
+      "гречка": { kcal: 343, protein: 13.3, fat: 3.4, carbs: 71.5 },
+      "рис": { kcal: 344, protein: 6.7, fat: 0.7, carbs: 78.9 },
+      "киноа": { kcal: 368, protein: 14, fat: 6, carbs: 64 },
+      "чечевица": { kcal: 295, protein: 24, fat: 1.5, carbs: 46 },
+      "нут": { kcal: 364, protein: 19, fat: 6, carbs: 61 },
+      "авокадо": { kcal: 160, protein: 2, fat: 14.7, carbs: 8.5 },
+      "брокколи": { kcal: 34, protein: 2.8, fat: 0.4, carbs: 6.6 },
+      "помидор": { kcal: 18, protein: 0.9, fat: 0.2, carbs: 3.9 },
+      "огурец": { kcal: 15, protein: 0.8, fat: 0.1, carbs: 2.5 },
+      "шпинат": { kcal: 23, protein: 2.9, fat: 0.4, carbs: 3.6 },
+      "яблоко": { kcal: 47, protein: 0.4, fat: 0.4, carbs: 9.8 },
+      "банан": { kcal: 89, protein: 1.1, fat: 0.3, carbs: 22.8 },
+      "оливковое масло": { kcal: 884, protein: 0, fat: 100, carbs: 0 }
+    };
+
+    function parseIngredientToken(token) {
+      const [namePart, gramsPart] = token.split(":");
+      const name = (namePart || "").trim().toLowerCase();
+      const grams = Number((gramsPart || "").trim()) || 100;
+      return { name, grams };
+    }
+
+    function calculateByRecipe(ingredients) {
+      const totals = { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+      const missing = [];
+      const lines = [];
+
+      ingredients.forEach((ingredientToken) => {
+        const { name, grams } = parseIngredientToken(ingredientToken);
+        if (!name) {
+          return;
+        }
+
+        const product = productsDb[name];
+        if (!product) {
+          missing.push(name);
+          return;
+        }
+
+        const ratio = grams / 100;
+        const kcal = product.kcal * ratio;
+        const protein = product.protein * ratio;
+        const fat = product.fat * ratio;
+        const carbs = product.carbs * ratio;
+
+        totals.kcal += kcal;
+        totals.protein += protein;
+        totals.fat += fat;
+        totals.carbs += carbs;
+        lines.push(`${name} (${grams} г): ${kcal.toFixed(0)} ккал`);
+      });
+
+      return { totals, missing, lines };
+    }
 
     document.getElementById("generateBtn").addEventListener("click", () => {
       const goal = document.getElementById("goal").value;
       const ingredientsRaw = document.getElementById("ingredients").value.trim();
       const ingredients = ingredientsRaw
         ? ingredientsRaw.split(",").map((item) => item.trim()).filter(Boolean)
-        : ["овощи", "источник белка", "цельнозерновой гарнир"];
+        : ["куриная грудка:150", "брокколи:100", "киноа:80"];
 
       const recipe = `Цель: ${goal}. Попробуйте боул из: ${ingredients.join(", ")}. ` +
         "Добавьте зелень, немного оливкового масла и специи без лишней соли.";
 
       recipeResult.textContent = recipe;
+
+      const { totals, missing, lines } = calculateByRecipe(ingredients);
+      proteinInput.value = totals.protein.toFixed(1);
+      fatInput.value = totals.fat.toFixed(1);
+      carbsInput.value = totals.carbs.toFixed(1);
+      caloriesResult.textContent =
+        `Итог по рецепту: ${totals.kcal.toFixed(0)} ккал (Б: ${totals.protein.toFixed(1)} г, ` +
+        `Ж: ${totals.fat.toFixed(1)} г, У: ${totals.carbs.toFixed(1)} г).`;
+
+      if (lines.length > 0) {
+        recipeResult.textContent += ` Состав по калориям: ${lines.join("; ")}.`;
+      }
+      if (missing.length > 0) {
+        recipeResult.textContent += ` Не найдены в базе: ${missing.join(", ")}.`;
+      }
     });
 
     document.getElementById("calcBtn").addEventListener("click", () => {
-      const protein = Number(document.getElementById("protein").value) || 0;
-      const fat = Number(document.getElementById("fat").value) || 0;
-      const carbs = Number(document.getElementById("carbs").value) || 0;
+      const protein = Number(proteinInput.value) || 0;
+      const fat = Number(fatInput.value) || 0;
+      const carbs = Number(carbsInput.value) || 0;
 
       const calories = protein * 4 + fat * 9 + carbs * 4;
       caloriesResult.textContent = `Итог: ${calories} ккал`;
