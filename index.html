@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Генератор полезных рецептов и подсчет калорий</title>
+  <style>
+    :root {
+      --bg: #f5f8f3;
+      --card: #ffffff;
+      --primary: #2e7d32;
+      --text: #1f2a1f;
+      --muted: #5d6a5d;
+      --border: #dce7d9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 16px 48px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+      color: var(--primary);
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    input, textarea, select, button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 10px;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      font-family: inherit;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    button {
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover {
+      filter: brightness(1.06);
+    }
+
+    .result {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #eef7ed;
+      border: 1px solid #cfe4cd;
+      min-height: 48px;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Генератор полезных рецептов и подсчет калорий</h1>
+    <p class="subtitle">Простая страница для нутрициолога: идеи блюд и быстрый расчет КБЖУ.</p>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Генератор рецепта</h2>
+
+        <label for="goal">Цель питания</label>
+        <select id="goal">
+          <option>Снижение веса</option>
+          <option>Поддержание формы</option>
+          <option>Набор массы</option>
+        </select>
+
+        <label for="ingredients">Ингредиенты (через запятую)</label>
+        <textarea id="ingredients" placeholder="например: куриная грудка, брокколи, киноа"></textarea>
+
+        <button id="generateBtn" type="button">Сгенерировать идею рецепта</button>
+
+        <div class="result" id="recipeResult">Здесь появится пример полезного рецепта.</div>
+      </article>
+
+      <article class="card">
+        <h2>Подсчет калорий (КБЖУ)</h2>
+
+        <label for="protein">Белки (г)</label>
+        <input id="protein" type="number" min="0" placeholder="0" />
+
+        <label for="fat">Жиры (г)</label>
+        <input id="fat" type="number" min="0" placeholder="0" />
+
+        <label for="carbs">Углеводы (г)</label>
+        <input id="carbs" type="number" min="0" placeholder="0" />
+
+        <button id="calcBtn" type="button">Рассчитать калории</button>
+
+        <div class="result" id="caloriesResult">Итог: 0 ккал</div>
+      </article>
+    </section>
+
+    <p class="footer-note">Формула расчета: белки × 4 + жиры × 9 + углеводы × 4.</p>
+  </main>
+
+  <script>
+    const recipeResult = document.getElementById("recipeResult");
+    const caloriesResult = document.getElementById("caloriesResult");
+
+    document.getElementById("generateBtn").addEventListener("click", () => {
+      const goal = document.getElementById("goal").value;
+      const ingredientsRaw = document.getElementById("ingredients").value.trim();
+      const ingredients = ingredientsRaw
+        ? ingredientsRaw.split(",").map((item) => item.trim()).filter(Boolean)
+        : ["овощи", "источник белка", "цельнозерновой гарнир"];
+
+      const recipe = `Цель: ${goal}. Попробуйте боул из: ${ingredients.join(", ")}. ` +
+        "Добавьте зелень, немного оливкового масла и специи без лишней соли.";
+
+      recipeResult.textContent = recipe;
+    });
+
+    document.getElementById("calcBtn").addEventListener("click", () => {
+      const protein = Number(document.getElementById("protein").value) || 0;
+      const fat = Number(document.getElementById("fat").value) || 0;
+      const carbs = Number(document.getElementById("carbs").value) || 0;
+
+      const calories = protein * 4 + fat * 9 + carbs * 4;
+      caloriesResult.textContent = `Итог: ${calories} ккал`;
+    });
+  </script>
+</body>
+</html>
