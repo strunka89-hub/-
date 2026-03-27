@@ -111,6 +111,23 @@
       font-size: 0.86rem;
       color: var(--muted);
     }
+
+    .inline-grid {
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: 8px;
+    }
+
+    .small-result {
+      margin-top: -4px;
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #f3faf2;
+      border: 1px solid #d8ead5;
+      font-size: 0.9rem;
+      color: #2a5d2c;
+    }
   </style>
 </head>
 <body>
@@ -131,6 +148,14 @@
 
         <label for="ingredients">Ингредиенты (через запятую, можно с граммами)</label>
         <textarea id="ingredients" placeholder="например: куриная грудка:150, брокколи:100, киноа:80"></textarea>
+
+        <label for="productSelect">Выбрать продукт из базы</label>
+        <div class="inline-grid">
+          <select id="productSelect"></select>
+          <input id="productGrams" type="number" min="1" value="100" placeholder="граммы" />
+        </div>
+        <div class="small-result" id="productPreview">Калорийность выбранного продукта появится здесь.</div>
+        <button id="addProductBtn" type="button">Добавить продукт в рецепт</button>
 
         <button id="generateBtn" type="button">Сгенерировать идею рецепта</button>
 
@@ -164,6 +189,9 @@
     const proteinInput = document.getElementById("protein");
     const fatInput = document.getElementById("fat");
     const carbsInput = document.getElementById("carbs");
+    const productSelect = document.getElementById("productSelect");
+    const productGramsInput = document.getElementById("productGrams");
+    const productPreview = document.getElementById("productPreview");
 
     // Пищевая ценность на 100 г: ккал, белки, жиры, углеводы.
     const productsDb = {
@@ -189,6 +217,39 @@
       "банан": { kcal: 89, protein: 1.1, fat: 0.3, carbs: 22.8 },
       "оливковое масло": { kcal: 884, protein: 0, fat: 100, carbs: 0 }
     };
+
+    function formatNumber(value) {
+      return Number.isInteger(value) ? String(value) : value.toFixed(1);
+    }
+
+    function updateProductPreview() {
+      const selectedName = productSelect.value;
+      const grams = Number(productGramsInput.value) || 100;
+      const product = productsDb[selectedName];
+
+      if (!product) {
+        productPreview.textContent = "Выберите продукт из списка.";
+        return;
+      }
+
+      const ratio = grams / 100;
+      const kcal = product.kcal * ratio;
+      const protein = product.protein * ratio;
+      const fat = product.fat * ratio;
+      const carbs = product.carbs * ratio;
+
+      productPreview.textContent =
+        `${selectedName}, ${grams} г: ${kcal.toFixed(0)} ккал (Б: ${formatNumber(protein)} г, ` +
+        `Ж: ${formatNumber(fat)} г, У: ${formatNumber(carbs)} г)`;
+    }
+
+    function populateProductsSelect() {
+      const names = Object.keys(productsDb).sort((a, b) => a.localeCompare(b, "ru"));
+      productSelect.innerHTML = names
+        .map((name) => `<option value="${name}">${name}</option>`)
+        .join("");
+      updateProductPreview();
+    }
 
     function parseIngredientToken(token) {
       const [namePart, gramsPart] = token.split(":");
@@ -229,6 +290,21 @@
 
       return { totals, missing, lines };
     }
+
+    populateProductsSelect();
+
+    productSelect.addEventListener("change", updateProductPreview);
+    productGramsInput.addEventListener("input", updateProductPreview);
+
+    document.getElementById("addProductBtn").addEventListener("click", () => {
+      const selectedName = productSelect.value;
+      const grams = Number(productGramsInput.value) || 100;
+      const newToken = `${selectedName}:${grams}`;
+      const ingredientsField = document.getElementById("ingredients");
+      const current = ingredientsField.value.trim();
+      ingredientsField.value = current ? `${current}, ${newToken}` : newToken;
+      updateProductPreview();
+    });
 
     document.getElementById("generateBtn").addEventListener("click", () => {
       const goal = document.getElementById("goal").value;
